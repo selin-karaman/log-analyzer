@@ -35,6 +35,30 @@ def generate_text_report(analysis: dict) -> str:
     for ip, count in analysis["top_ips"]:
         lines.append(f"  {ip}: {count}")
 
+        peak_traffic = analysis["peak_traffic_hour"]
+
+    if peak_traffic:
+        hour, count = peak_traffic
+
+        lines.append("")
+        lines.append("Peak traffic hour:")
+        lines.append(
+            f"  {hour:02d}:00 - {(hour + 1) % 24:02d}:00 "
+            f"({count} requests)"
+        )
+
+    peak_error = analysis["peak_error_hour"]
+
+    if peak_error:
+        hour, count = peak_error
+
+        lines.append("")
+        lines.append("Peak error hour:")
+        lines.append(
+            f"  {hour:02d}:00 - {(hour + 1) % 24:02d}:00 "
+            f"({count} errors)"
+        )
+
     return "\n".join(lines)
 
 

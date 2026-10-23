@@ -6,7 +6,10 @@ def analyze_logs(entries: list[dict], top_n: int = 5) -> dict:
 
     unique_ips = len({entry["ip"] for entry in entries})
 
-    status_counts = Counter(entry["status"] for entry in entries)
+    status_counts = Counter(
+        entry["status"]
+        for entry in entries
+    )
 
     client_errors = sum(
         count
@@ -36,6 +39,29 @@ def analyze_logs(entries: list[dict], top_n: int = 5) -> dict:
         if entry["status"] >= 400
     )
 
+    hourly_traffic = Counter(
+        entry["timestamp"].hour
+        for entry in entries
+    )
+
+    hourly_errors = Counter(
+        entry["timestamp"].hour
+        for entry in entries
+        if entry["status"] >= 400
+    )
+
+    peak_traffic_hour = (
+        hourly_traffic.most_common(1)[0]
+        if hourly_traffic
+        else None
+    )
+
+    peak_error_hour = (
+        hourly_errors.most_common(1)[0]
+        if hourly_errors
+        else None
+    )
+
     return {
         "total_requests": total_requests,
         "unique_ips": unique_ips,
@@ -45,4 +71,6 @@ def analyze_logs(entries: list[dict], top_n: int = 5) -> dict:
         "top_endpoints": endpoint_counts.most_common(top_n),
         "top_error_endpoints": error_endpoint_counts.most_common(top_n),
         "top_ips": ip_counts.most_common(top_n),
+        "peak_traffic_hour": peak_traffic_hour,
+        "peak_error_hour": peak_error_hour,
     }
