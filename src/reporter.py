@@ -10,11 +10,32 @@ def generate_text_report(analysis: dict) -> str:
         f"Unique IPs: {analysis['unique_ips']}",
         f"4xx responses: {analysis['client_errors']}",
         f"5xx responses: {analysis['server_errors']}",
-        "",
-        "Status code distribution:",
+        f"Error rate: {analysis['error_rate']:.2f}%",
     ]
 
-    for status, count in sorted(analysis["status_counts"].items()):
+    time_range = analysis["time_range"]
+
+    if time_range:
+        lines.append(
+            "Analyzed time range: "
+            f"{time_range['start']} - "
+            f"{time_range['end']}"
+        )
+
+    lines.append("")
+    lines.append("HTTP method distribution:")
+
+    for method, count in sorted(
+        analysis["method_counts"].items()
+    ):
+        lines.append(f"  {method}: {count}")
+
+    lines.append("")
+    lines.append("Status code distribution:")
+
+    for status, count in sorted(
+        analysis["status_counts"].items()
+    ):
         lines.append(f"  {status}: {count}")
 
     lines.append("")
@@ -35,7 +56,7 @@ def generate_text_report(analysis: dict) -> str:
     for ip, count in analysis["top_ips"]:
         lines.append(f"  {ip}: {count}")
 
-        peak_traffic = analysis["peak_traffic_hour"]
+    peak_traffic = analysis["peak_traffic_hour"]
 
     if peak_traffic:
         hour, count = peak_traffic
@@ -76,11 +97,16 @@ def save_reports(
         "w",
         encoding="utf-8"
     ) as file:
-        file.write(text_report)
+        file.write(text_report + "\n")
 
     with open(
         output_path / "analysis.json",
         "w",
         encoding="utf-8"
     ) as file:
-        json.dump(analysis, file, indent=4)
+        json.dump(
+            analysis,
+            file,
+            indent=4,
+            default=str
+        )

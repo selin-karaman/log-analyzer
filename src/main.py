@@ -7,6 +7,9 @@ from src.parser import parse_log_file
 from src.reporter import generate_text_report, save_reports
 
 
+SUPPORTED_EXTENSIONS = {".log", ".txt", ".csv"}
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Analyze server access log files."
@@ -38,14 +41,44 @@ def main():
 
     args = parser.parse_args()
 
-    file_extension = Path(args.log_file).suffix.lower()
+    log_path = Path(args.log_file)
+
+    if not log_path.exists():
+        print(f"Error: file not found: {args.log_file}")
+        return
+
+    if not log_path.is_file():
+        print(f"Error: path is not a file: {args.log_file}")
+        return
+
+    file_extension = log_path.suffix.lower()
+
+    if file_extension not in SUPPORTED_EXTENSIONS:
+        print(
+            "Error: unsupported file format. "
+            "Supported formats: .log, .txt, .csv"
+        )
+        return
+
+    if args.top <= 0:
+        print("Error: --top must be greater than 0.")
+        return
+
+    if log_path.stat().st_size == 0:
+        print("Error: input file is empty.")
+        return
 
     parsing_stats = None
 
-    if file_extension == ".csv":
-        entries, parsing_stats = parse_csv_file(args.log_file)
-    else:
-        entries = parse_log_file(args.log_file)
+    try:
+        if file_extension == ".csv":
+            entries, parsing_stats = parse_csv_file(str(log_path))
+        else:
+            entries = parse_log_file(str(log_path))
+
+    except (OSError, UnicodeDecodeError) as error:
+        print(f"Error: could not read log file: {error}")
+        return
 
     if not entries:
         print("No valid log entries found.")
@@ -74,10 +107,15 @@ def main():
 
     print(generate_text_report(analysis))
 
-    save_reports(
-        analysis,
-        output_directory=args.output
-    )
+    try:
+        save_reports(
+            analysis,
+            output_directory=args.output
+        )
+
+    except OSError as error:
+        print(f"\nError: could not save reports: {error}")
+        return
 
     print("\nReports created:")
     print(f"  {args.output}/summary.txt")
